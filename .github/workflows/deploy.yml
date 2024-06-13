@@ -1,0 +1,51 @@
+name: Backend deploy
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: Set up environment
+      run: |
+        touch .env
+        
+        echo "NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}" >> .env
+        echo "NEXT_PUBLIC_APP_STORE_URL=${{ vars.NEXT_PUBLIC_APP_STORE_URL }}" >> .env
+        echo "NEXT_PUBLIC_CHECKOUT_BASE_URL=${{ vars.NEXT_PUBLIC_CHECKOUT_BASE_URL }}" >> .env
+        echo "NEXT_PUBLIC_DESKTOP_URL=${{ vars.NEXT_PUBLIC_DESKTOP_URL }}" >> .env
+        echo "NEXT_PUBLIC_GOOGLE_PLAY_URL=${{ vars.NEXT_PUBLIC_GOOGLE_PLAY_URL }}" >> .env
+        echo "NEXT_PUBLIC_TERMS_URL=${{ vars.NEXT_PUBLIC_TERMS_URL }}" >> .env
+
+        cat .env
+    - run: npm ci
+    - run: npm run build
+    - run: ls -a
+    - name: Set stage
+      id: set-stage
+      run: |
+        if [ "${{ github.ref_name }}" == "main" ]; then
+          echo "stage=prod" >> $GITHUB_ENV
+        else
+          echo "stage=${{ github.ref_name }}" >> $GITHUB_ENV
+        fi
+    - name: serverless deploy and sync files s3 and invalidation cloudfront
+      uses: serverless/github-action@v3
+      with:
+        args: deploy --stage ${{ env.stage }} && sls s3sync && sls cloudfrontInvalidate
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

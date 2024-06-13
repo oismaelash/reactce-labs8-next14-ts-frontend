@@ -1,0 +1,80 @@
+Resources:
+    MGMFrontendBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-${opt:stage}
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+        OwnershipControls:
+          Rules:
+            - ObjectOwnership: ObjectWriter
+        WebsiteConfiguration:
+          IndexDocument: index.html
+          ErrorDocument: error.html
+
+    MGMFrontendBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref MGMFrontendBucket
+        PolicyDocument:
+          Statement:
+            Action: 's3:GetObject'
+            Effect: Allow
+            Principal: '*'
+            Resource: !Sub "${MGMFrontendBucket.Arn}/*"
+    
+    MGMFrontendWebACL:
+      Type: AWS::WAFv2::WebACL
+      Properties:
+        Name: MGMFrontendWebACL-${opt:stage}
+        Scope: CLOUDFRONT
+        DefaultAction:
+          Allow: {}
+        VisibilityConfig:
+          SampledRequestsEnabled: true
+          CloudWatchMetricsEnabled: true
+          MetricName: MGMFrontendWebACL-${opt:stage}
+
+    MGMFrontendCloudFrontDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Enabled: true
+          Origins:
+            - Id: S3Origin
+              DomainName: !GetAtt MGMFrontendBucket.RegionalDomainName
+              S3OriginConfig:
+                OriginAccessIdentity: ""
+          DefaultCacheBehavior:
+            TargetOriginId: S3Origin
+            Compress: true
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # CachingOptimized
+            ViewerProtocolPolicy: redirect-to-https
+            ForwardedValues:
+              QueryString: true
+              Cookies:
+                Forward: none
+          DefaultRootObject: index.html
+          ViewerCertificate:
+            CloudFrontDefaultCertificate: true
+          WebACLId:
+            Fn::GetAtt:
+              - MGMFrontendWebACL
+              - Arn
+          Logging:
+            Bucket: 
+              Fn::GetAtt:
+                - MGMFrontendBucket
+                - DomainName
+            Prefix: cloudfront-logs/
+            IncludeCookies: false
+          CustomErrorResponses:
+            - ErrorCachingMinTTL: 10
+              ErrorCode: 403
+              ResponseCode: 200
+              ResponsePagePath: /index.html
+
+Outputs:
+  CloudFrontDistributionId:
+    Description: ID da distribuição do CloudFront
+    Value: !Ref MGMFrontendCloudFrontDistribution

@@ -1,0 +1,38 @@
+service: reactce-lab8
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  region: us-east-1
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:*
+            - cloudfront:*
+            - wafv2:*
+          Resource: "*"
+
+resources:
+  ${file(./resources.yml)}
+
+plugins:
+  - serverless-s3-sync
+  - serverless-cloudfront-invalidate
+
+custom:
+  s3Sync:
+    - bucketName: ${self:service}-${opt:stage}
+      localDir: out
+  cloudfrontInvalidate:
+    - distributionId: ${cf:${self:service}-${opt:stage}.CloudFrontDistributionId, '?'}
+      autoInvalidate: false
+      items:
+        - '/*'
+
+package:
+  exclude:
+    - node_modules/**
+    - out/**
+    - .next/**
