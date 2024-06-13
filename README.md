@@ -1,5 +1,8 @@
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
+## Slides
+https://www.slideshare.net/slideshow/criando-pipeline-de-frontend-com-github-actions/269453936
+
 ## Getting Started
 
 First, run the development server:
