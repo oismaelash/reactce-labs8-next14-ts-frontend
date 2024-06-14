@@ -24,11 +24,6 @@ jobs:
         touch .env
         
         echo "NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}" >> .env
-        echo "NEXT_PUBLIC_APP_STORE_URL=${{ vars.NEXT_PUBLIC_APP_STORE_URL }}" >> .env
-        echo "NEXT_PUBLIC_CHECKOUT_BASE_URL=${{ vars.NEXT_PUBLIC_CHECKOUT_BASE_URL }}" >> .env
-        echo "NEXT_PUBLIC_DESKTOP_URL=${{ vars.NEXT_PUBLIC_DESKTOP_URL }}" >> .env
-        echo "NEXT_PUBLIC_GOOGLE_PLAY_URL=${{ vars.NEXT_PUBLIC_GOOGLE_PLAY_URL }}" >> .env
-        echo "NEXT_PUBLIC_TERMS_URL=${{ vars.NEXT_PUBLIC_TERMS_URL }}" >> .env
 
         cat .env
     - run: npm install --force
